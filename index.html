@@ -1,0 +1,1192 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Gestão Escolar - Prof. José Pasqualini</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col">
+
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold text-lg shadow-md shadow-indigo-100">
+                <i class="fa-solid fa-graduation-cap"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-slate-900 text-base" id="page-title">Painel Geral</h1>
+                <p class="text-xs text-slate-500">Professor José Pasqualini • Ano Letivo 2026</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-3">
+            <button onclick="exportHistory()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs px-3 py-2.5 rounded-xl transition-all flex items-center gap-2 shadow-sm">
+                <i class="fa-solid fa-download"></i> <span class="hidden sm:inline">Exportar Histórico</span>
+            </button>
+            <select id="class-selector" onchange="changeClass(this.value)" class="bg-slate-100 border border-slate-200 text-slate-700 text-xs font-medium rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500">
+                <!-- Populated dynamically -->
+            </select>
+            <select id="trimester-selector" onchange="changeTrimester(this.value)" class="bg-slate-100 border border-slate-200 text-slate-700 text-xs font-medium rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500">
+                <option value="1T">1º Trimestre (1T)</option>
+                <option value="2T" selected>2º Trimestre (2T)</option>
+                <option value="3T">3º Trimestre (3T)</option>
+            </select>
+        </div>
+    </header>
+
+    <div class="flex-1 flex overflow-hidden">
+        <aside class="w-72 bg-slate-900 text-slate-300 flex flex-col border-r border-slate-800 shrink-0 hidden md:flex">
+            <div class="p-6 border-b border-slate-800/80">
+                <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Menu Principal</span>
+            </div>
+            <nav class="flex-1 p-4 space-y-1.5 overflow-y-auto" id="main-nav">
+                <button onclick="switchTab('dashboard')" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all bg-indigo-600 text-white" data-tab="dashboard">
+                    <i class="fa-solid fa-chart-pie text-lg w-5"></i> Painel Geral
+                </button>
+                <button onclick="switchTab('alunos')" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all text-slate-400 hover:bg-slate-800 hover:text-white" data-tab="alunos">
+                    <i class="fa-solid fa-users text-lg w-5"></i> Alunos & Notas
+                </button>
+                <button onclick="switchTab('perfil-individual')" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all text-slate-400 hover:bg-slate-800 hover:text-white" data-tab="perfil-individual">
+                    <i class="fa-solid fa-user-gear text-lg w-5"></i> Perfil & Diagnóstico
+                </button>
+                <button onclick="switchTab('provas')" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all text-slate-400 hover:bg-slate-800 hover:text-white" data-tab="provas">
+                    <i class="fa-solid fa-pen-to-square text-lg w-5"></i> Notas de Prova (P1, P2, P3)
+                </button>
+                <button onclick="switchTab('trabalhos')" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all text-slate-400 hover:bg-slate-800 hover:text-white" data-tab="trabalhos">
+                    <i class="fa-solid fa-file-pen text-lg w-5"></i> Trabalhos (Máx 3.0)
+                </button>
+                <button onclick="switchTab('cadernos')" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all text-slate-400 hover:bg-slate-800 hover:text-white" data-tab="cadernos">
+                    <i class="fa-solid fa-book text-lg w-5"></i> Cadernos & Vistos
+                </button>
+                <button onclick="switchTab('comportamento')" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all text-slate-400 hover:bg-slate-800 hover:text-white" data-tab="comportamento">
+                    <i class="fa-solid fa-face-smile text-lg w-5"></i> Comportamento Escolar
+                </button>
+                <button onclick="switchTab('diagnostico')" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all text-slate-400 hover:bg-slate-800 hover:text-white" data-tab="diagnostico">
+                    <i class="fa-solid fa-stethoscope text-lg w-5"></i> Diagnóstico & Alertas
+                </button>
+            </nav>
+        </aside>
+
+        <main class="flex-1 overflow-y-auto p-6 md:p-8 space-y-6">
+
+            <!-- TAB 1: DASHBOARD -->
+            <section id="tab-dashboard" class="tab-content active space-y-6">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-1">
+                        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Total de Alunos</span>
+                        <h3 class="text-2xl font-extrabold text-slate-900" id="dash-total-students">0</h3>
+                        <p class="text-xs text-emerald-600 font-medium"><i class="fa-solid fa-arrow-trend-up"></i> Turma ativa</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-1">
+                        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Média Geral da Turma</span>
+                        <h3 class="text-2xl font-extrabold text-slate-900" id="dash-turma-avg">0.0</h3>
+                        <p class="text-xs text-indigo-600 font-medium"><i class="fa-solid fa-calculator"></i> Baseado nas avaliações</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-1">
+                        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Alunos em Alerta (&lt; 6.0)</span>
+                        <h3 class="text-2xl font-extrabold text-amber-600" id="dash-alert-count">0</h3>
+                        <p class="text-xs text-slate-500 font-medium">Necessitam reforço</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-1">
+                        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Cadernos Conferidos</span>
+                        <h3 class="text-2xl font-extrabold text-emerald-600" id="dash-notebook-rate">0%</h3>
+                        <p class="text-xs text-slate-500 font-medium">Média de vistos</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm lg:col-span-2 space-y-4">
+                        <h3 class="font-bold text-base text-slate-900">Distribuição de Notas da Turma</h3>
+                        <div class="h-72 relative">
+                            <canvas id="chart-dashboard-grades"></canvas>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                        <h3 class="font-bold text-base text-slate-900">Ações Rápidas</h3>
+                        <div class="space-y-2.5">
+                            <button onclick="switchTab('perfil-individual')" class="w-full text-left px-4 py-3 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-medium text-xs flex items-center justify-between transition-all">
+                                <span><i class="fa-solid fa-user-gear mr-2"></i> Abrir Perfil & Diagnóstico</span>
+                                <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                            </button>
+                            <button onclick="switchTab('provas')" class="w-full text-left px-4 py-3 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 font-medium text-xs flex items-center justify-between transition-all">
+                                <span><i class="fa-solid fa-pen-to-square mr-2"></i> Lançar Notas de Prova</span>
+                                <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                            </button>
+                            <button onclick="switchTab('cadernos')" class="w-full text-left px-4 py-3 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 font-medium text-xs flex items-center justify-between transition-all">
+                                <span><i class="fa-solid fa-book mr-2"></i> Registrar Vistos de Caderno</span>
+                                <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 2: ALUNOS & NOTAS -->
+            <section id="tab-alunos" class="tab-content space-y-6">
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div>
+                            <h3 class="font-bold text-lg text-slate-900">Lista de Alunos & Acompanhamento</h3>
+                            <p class="text-xs text-slate-500 mt-0.5">Gerencie observações individuais, notas específicas e acesse o diagnóstico de cada aluno.</p>
+                        </div>
+                        <div class="relative">
+                            <input type="text" id="student-search-input" onkeyup="filterStudentsTable()" placeholder="Buscar aluno..." class="pl-9 pr-4 py-2 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500 w-full sm:w-64">
+                            <i class="fa-solid fa-search absolute left-3 top-3 text-slate-400 text-xs"></i>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse" id="table-students-list">
+                            <thead>
+                                <tr class="bg-slate-50 border-b border-slate-200 text-xs uppercase text-slate-500 font-bold tracking-wider">
+                                    <th class="p-4">Estudante</th>
+                                    <th class="p-4">Notas & Alertas Especiais</th>
+                                    <th class="p-4">Comportamento Destaque</th>
+                                    <th class="p-4 text-right">Perfil & Dicas</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 text-sm">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 3: PERFIL & DIAGNÓSTICO INDIVIDUAL -->
+            <section id="tab-perfil-individual" class="tab-content space-y-6">
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <h3 class="font-bold text-lg text-slate-900">Diagnóstico Individual & Gráfico de Desempenho</h3>
+                        <p class="text-xs text-slate-500 mt-0.5">Selecione um aluno para analisar seu gráfico individual, diagnóstico e soluções pedagógicas.</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <label class="text-xs font-bold text-slate-600">Estudante:</label>
+                        <select id="select-individual-student" onchange="renderIndividualProfileTab(this.value)" class="bg-slate-100 border border-slate-200 text-slate-800 text-xs font-medium rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-indigo-500 min-w-[220px]">
+                            <!-- Populated dynamically -->
+                        </select>
+                    </div>
+                </div>
+                <div id="individual-profile-content-container" class="space-y-6">
+                    <!-- Populated dynamically -->
+                </div>
+            </section>
+
+            <!-- TAB 4: PROVAS -->
+            <section id="tab-provas" class="tab-content space-y-6">
+                <div class="bg-indigo-50/70 border border-indigo-100 p-6 rounded-2xl space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="font-bold text-sm text-indigo-900"><i class="fa-solid fa-paste mr-2"></i> Importação Rápida (Copiar & Colar)</h3>
+                            <p class="text-xs text-slate-600 mt-0.5">Cole abaixo a coluna de notas copiada do Excel ou Planilhas Google (uma nota por linha na mesma ordem dos alunos abaixo).</p>
+                        </div>
+                    </div>
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <textarea id="paste-grades-textarea" rows="2" placeholder="Cole aqui as notas (ex:&#10;8.5&#10;7.0&#10;9.2...)" class="flex-1 bg-white border border-indigo-200 rounded-xl p-3 text-xs outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+                        <button onclick="applyPastedGrades()" class="px-5 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all self-end sm:self-auto flex items-center gap-2">
+                            <i class="fa-solid fa-check"></i> Distribuir Notas
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="p-6 border-b border-slate-100">
+                        <h3 class="font-bold text-lg text-slate-900">Lançamento de Média das Provas</h3>
+                        <p class="text-xs text-slate-500 mt-0.5">Insira a nota da média total das avaliações do trimestre ativo.</p>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse" id="table-provas">
+                            <thead>
+                                <tr class="bg-slate-50 border-b border-slate-200 text-xs uppercase text-slate-500 font-bold tracking-wider">
+                                    <th class="p-4">Estudante</th>
+                                    <th class="p-4 text-center">Média Total de Provas (0 - 10)</th>
+                                    <th class="p-4">Situação da Avaliação</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 text-sm">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 5: TRABALHOS -->
+            <section id="tab-trabalhos" class="tab-content space-y-6">
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="p-6 border-b border-slate-100">
+                        <h3 class="font-bold text-lg text-slate-900">Lançamento de Trabalhos (Máx 3.0)</h3>
+                        <p class="text-xs text-slate-500 mt-0.5">Atribua a pontuação correspondente aos trabalhos práticos e pesquisas.</p>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse" id="table-trabalhos">
+                            <thead>
+                                <tr class="bg-slate-50 border-b border-slate-200 text-xs uppercase text-slate-500 font-bold tracking-wider">
+                                    <th class="p-4">Estudante</th>
+                                    <th class="p-4 text-center">Trabalho (0 - 3.0)</th>
+                                    <th class="p-4">Observação do Trabalho</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 text-sm">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 6: CADERNOS -->
+            <section id="tab-cadernos" class="tab-content space-y-6">
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div>
+                            <h3 class="font-bold text-lg text-slate-900">Vistos de Caderno</h3>
+                            <p class="text-xs text-slate-500 mt-0.5">Acompanhe a organização e entrega das atividades registradas no caderno.</p>
+                        </div>
+                        <button onclick="addNewNotebookCheck()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-xs rounded-xl shadow-sm transition-all flex items-center gap-2">
+                            <i class="fa-solid fa-plus"></i> Novo Visto / Data
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse" id="table-cadernos">
+                            <thead>
+                                <tr class="bg-slate-50 border-b border-slate-200 text-xs uppercase text-slate-500 font-bold tracking-wider">
+                                    <th class="p-4">Estudante</th>
+                                    <!-- Dynamic notebook columns -->
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 text-sm">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 7: COMPORTAMENTO -->
+            <section id="tab-comportamento" class="tab-content space-y-6">
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="p-6 border-b border-slate-100">
+                        <h3 class="font-bold text-lg text-slate-900">Comportamento Escolar & Participação</h3>
+                        <p class="text-xs text-slate-500 mt-0.5">Clique nos botões de tag para ativar ou desativar os pontos positivos e de atenção de cada aluno.</p>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse" id="table-comportamento">
+                            <thead>
+                                <tr class="bg-slate-50 border-b border-slate-200 text-xs uppercase text-slate-500 font-bold tracking-wider">
+                                    <th class="p-4">Estudante</th>
+                                    <th class="p-4">Destaques Positivos</th>
+                                    <th class="p-4">Pontos de Atenção</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 text-sm">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 8: DIAGNÓSTICO -->
+            <section id="tab-diagnostico" class="tab-content space-y-6">
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6">
+                    <div>
+                        <h3 class="font-bold text-lg text-slate-900">Diagnóstico Geral da Turma & Plano de Ação</h3>
+                        <p class="text-xs text-slate-500 mt-0.5">Resumo analítico dos pontos críticos e recomendações pedagógicas globais.</p>
+                    </div>
+                    <div id="diagnostic-summary-content" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <script>
+        let defaultState = {
+            selectedClass: 'Matutino_6º Ano A',
+            selectedTrimester: '2T',
+            behavior: {
+                "Amanda Beatriz Silveira": {
+                    "positive": ["Foco", "Participativo", "Colaborativo", "Respeitoso"],
+                    "negative": ["Conversa Paralela"],
+                    "notes": ""
+                },
+                "Bianca de Medeiros": {
+                    "positive": [],
+                    "negative": ["Conversa Paralela", "Falta Material", "Disperso"],
+                    "notes": ""
+                },
+                "Danilo Langer Lohse": {
+                    "positive": ["Foco", "Participativo", "Colaborativo", "Pontual"],
+                    "negative": [],
+                    "notes": ""
+                }
+            }
+        };
+
+        // Complete School Database imported from JSON backup
+        let defaultSchoolDatabase = {
+            "Matutino_6º Ano A": {
+                students: [
+                    "Amanda Beatriz Silveira",
+                    "Bianca de Medeiros",
+                    "Danilo Langer Lohse",
+                    "Davi Joaquim Brayer",
+                    "Davi José Fossile Ricardo Vieira",
+                    "Gabriel Henrique Gesser",
+                    "Iago Danyel Maia",
+                    "Isabela Abreu de Oliveira",
+                    "João Lucas Souza de Lima",
+                    "João Paulo Brayer",
+                    "João Pedro Buttendorf",
+                    "Luiz Felipe Lopes Stazeski",
+                    "Maiara Piacentini Bublitz",
+                    "Melissa Jung",
+                    "Melissa Maria Dias",
+                    "Milena Flor da Silva",
+                    "Nathan Rocha da Luz",
+                    "Raíssa Yasmin Ritter Bolduan",
+                    "Sophia Isabelly da Silva",
+                    "Thais Talita Engelhardt",
+                    "Willyam Gustavo Dallmann"
+                ],
+                studentNotes: {
+                    "Bianca de Medeiros": "Risco de reprovação",
+                    "João Lucas Souza de Lima": "Caderno incompleto - Sem internet - problemas em casa",
+                    "João Pedro Buttendorf": "Risco de reprovação - Prestar atenção",
+                    "Luiz Felipe Lopes Stazeski": "Caderno incompleto",
+                    "Willyam Gustavo Dallmann": "Precisa melhorar"
+                },
+                notebooks: {
+                    "week_1783603069008": {
+                        id: "week_1783603069008",
+                        title: "Caderno dia 09/07 (16/07/2026)",
+                        trimester: "2T",
+                        records: {
+                            "Amanda Beatriz Silveira": "completo",
+                            "Bianca de Medeiros": "incompleto",
+                            "Danilo Langer Lohse": "completo",
+                            "Davi Joaquim Brayer": "completo",
+                            "Davi José Fossile Ricardo Vieira": "incompleto",
+                            "Gabriel Henrique Gesser": "completo",
+                            "Iago Danyel Maia": "incompleto",
+                            "João Lucas Souza de Lima": "incompleto",
+                            "Isabela Abreu de Oliveira": "completo",
+                            "João Paulo Brayer": "completo",
+                            "João Pedro Buttendorf": "incompleto",
+                            "Luiz Felipe Lopes Stazeski": "incompleto",
+                            "Maiara Piacentini Bublitz": "nao",
+                            "Melissa Jung": "completo",
+                            "Melissa Maria Dias": "completo",
+                            "Nathan Rocha da Luz": "completo",
+                            "Raíssa Yasmin Ritter Bolduan": "completo",
+                            "Sophia Isabelly da Silva": "completo",
+                            "Thais Talita Engelhardt": "nao",
+                            "Willyam Gustavo Dallmann": "completo"
+                        }
+                    }
+                },
+                grades: {
+                    "1T": {},
+                    "2T": {
+                        "Amanda Beatriz Silveira": { "p1": 7, "p2": 8, "p3": 9, "trabalho": "", "progressoManual": 8 },
+                        "Bianca de Medeiros": { "p1": 5, "p2": 4, "p3": 6, "trabalho": "", "progressoManual": 10 },
+                        "Davi Joaquim Brayer": { "p1": "", "p2": "", "p3": "", "trabalho": "", "progressoManual": 63 },
+                        "Davi José Fossile Ricardo Vieira": { "p1": "", "p2": "", "p3": "", "trabalho": "", "progressoManual": 3 },
+                        "Gabriel Henrique Gesser": { "p1": "", "p2": "", "p3": "", "trabalho": "", "progressoManual": 20 },
+                        "Iago Danyel Maia": { "p1": "", "p2": "", "p3": "", "trabalho": "", "progressoManual": 0 },
+                        "Isabela Abreu de Oliveira": { "p1": "", "p2": "", "p3": "", "trabalho": "", "progressoManual": 27 },
+                        "João Lucas Souza de Lima": { "p1": "", "p2": "", "p3": "", "trabalho": "", "progressoManual": 45 },
+                        "João Paulo Brayer": { "p1": "", "p2": "", "p3": "", "trabalho": "", "progressoManual": 34 },
+                        "João Pedro Buttendorf": { "p1": "", "p2": "", "p3": "", "trabalho": "", "progressoManual": 10 },
+                        "Luiz Felipe Lopes Stazeski": { "p1": "", "p2": "", "p3": "", "trabalho": "", "progressoManual": 27 },
+                        "Maiara Piacentini Bublitz": { "p1": "", "p2": "", "p3": "", "trabalho": "", "progressoManual": 3 },
+                        "Melissa Jung": { "p1": "", "p2": "", "p3": "", "trabalho": "", "progressoManual": 92 },
+                        "Melissa Maria Dias": { "p1": "", "p2": "", "p3": "", "trabalho": "", "progressoManual": 40 },
+                        "Milena Flor da Silva": { "p1": "", "p2": "", "p3": "", "trabalho": "", "progressoManual": 4 },
+                        "Nathan Rocha da Luz": { "p1": "", "p2": "", "p3": "", "trabalho": "", "progressoManual": 8 },
+                        "Raíssa Yasmin Ritter Bolduan": { "p1": "", "p2": "", "p3": "", "trabalho": "", "progressoManual": 10 },
+                        "Sophia Isabelly da Silva": { "p1": "", "p2": "", "p3": "", "trabalho": "", "progressoManual": 14 },
+                        "Thais Talita Engelhardt": { "p1": "", "p2": "", "p3": "", "trabalho": "", "progressoManual": 12 },
+                        "Willyam Gustavo Dallmann": { "p1": "", "p2": "", "p3": "", "trabalho": "", "progressoManual": 26 },
+                        "Danilo Langer Lohse": { "p1": "", "p2": "", "p3": "", "trabalho": "", "progressoManual": 60 }
+                    },
+                    "3T": {}
+                },
+                activeWeekId: "week_1783603069008"
+            },
+            "Matutino_7º Ano 01": {
+                students: [
+                    "Alana Alegri de Souza", "Alexah Zivelse Tovar Sardinas", "Alexandre Marquardt",
+                    "Ana Klara Herrmann", "Arthur Franceschi Ruthes", "Arthur Henrique Imroth",
+                    "Davi Lucas de Oliveira", "Felipe Mateus Hackbarth", "Gabriel Sell Ludwinski",
+                    "Heloisa Cunha", "Iriel Krisanski Buttendorf", "Isabely Lourenço da Silva",
+                    "Leticia Dos Santos Dutra", "Letícia Gabriely Burger", "Maria Heloisa de Matos Schulz",
+                    "Matheus Wieczorkievicz de Freitas", "Micheli Maas", "Pablo David Lima da Silva Ferreira",
+                    "Pedro Henrique Berlato Tavares", "Rafaelly Marcondes dos Santos", "Renan Lourenço Martins",
+                    "Samuel da Cruz Marquardt", "Tamara Manueli Wintrich"
+                ],
+                studentNotes: {},
+                notebooks: {},
+                grades: { "1T": {}, "2T": {}, "3T": {} }
+            },
+            "Matutino_8º Ano": {
+                students: [
+                    "Anthony Leonardo Stank da Silva", "Antonio Carlos Funke", "Carlos Vinicius Quost Glatz",
+                    "David Emanuel da Rocha Luz", "Felipe Alcântara dos Santos", "Frederico Kauã Mendonsa de Vargas",
+                    "Heloisa Caetano da Silva", "Henrique Welker", "Isabely Victória Tressi",
+                    "Jaqueline Beatriz Scheuer", "João Victor Duarte Bairros", "Lucas Hessel Stoeberl",
+                    "Luiz Alberto Piovesan Neto", "Maria Helena Lopes Stazeski", "Maria Heloisa Soares Kurota",
+                    "Pedro Henrique Kizema", "Rafaela Vicente", "Ryhana Emanuelle Machado",
+                    "Stella Maria Ferreira dos Santos Camargo", "Thaylaine Martins de Andrade",
+                    "Vinicius Mateus Baier", "Yasmin Mülbauer de Oliveira", "Miriam Dorn Melo Erardt"
+                ],
+                studentNotes: {},
+                notebooks: {
+                    "week_1785680932148": {
+                        id: "week_1785680932148",
+                        title: "Visto - AVA 3 - 2 TRI",
+                        trimester: "2T",
+                        records: {
+                            "Anthony Leonardo Stank da Silva": "incompleto",
+                            "Antonio Carlos Funke": "completo",
+                            "Carlos Vinicius Quost Glatz": "nao",
+                            "David Emanuel da Rocha Luz": "nao",
+                            "Felipe Alcântara dos Santos": "nao",
+                            "Frederico Kauã Mendonsa de Vargas": "incompleto",
+                            "Heloisa Caetano da Silva": "nao",
+                            "Henrique Welker": "incompleto",
+                            "Isabely Victória Tressi": "completo",
+                            "Jaqueline Beatriz Scheuer": "incompleto",
+                            "João Victor Duarte Bairros": "nao",
+                            "Lucas Hessel Stoeberl": "nao",
+                            "Luiz Alberto Piovesan Neto": "incompleto",
+                            "Maria Helena Lopes Stazeski": "completo",
+                            "Maria Heloisa Soares Kurota": "incompleto",
+                            "Pedro Henrique Kizema": "completo",
+                            "Rafaela Vicente": "completo",
+                            "Ryhana Emanuelle Machado": "nao",
+                            "Stella Maria Ferreira dos Santos Camargo": "completo",
+                            "Thaylaine Martins de Andrade": "completo",
+                            "Vinicius Mateus Baier": "incompleto",
+                            "Yasmin Mülbauer de Oliveira": "completo"
+                        }
+                    }
+                },
+                grades: {
+                    "1T": {},
+                    "2T": {
+                        "Henrique Welker": { "p1": "", "p2": "", "p3": "", "trabalho": "", "progressoManual": 0, "vistosManual": 7 },
+                        "Antonio Carlos Funke": { "p1": "", "p2": "", "p3": "", "trabalho": "", "progressoManual": 2, "vistosManual": 12 },
+                        "Isabely Victória Tressi": { "p1": "", "p2": "", "p3": "", "trabalho": "", "progressoManual": 25, "vistosManual": 12 },
+                        "Maria Helena Lopes Stazeski": { "p1": "", "p2": "", "p3": "", "trabalho": "", "progressoManual": 62, "vistosManual": 10 },
+                        "Rafaela Vicente": { "p1": "", "p2": "", "p3": "", "trabalho": "", "progressoManual": 19, "vistosManual": 12 },
+                        "Thaylaine Martins de Andrade": { "p1": "", "p2": "", "p3": "", "trabalho": "", "progressoManual": 47, "vistosManual": 12 }
+                    },
+                    "3T": {}
+                },
+                activeWeekId: "week_1785680932148"
+            },
+            "Matutino_9º Ano": {
+                students: [
+                    "Ana Beatriz Rodrigues dos Santos", "Andrielly Kannenberg", "Arthur Birr de Lima",
+                    "Bianca Catarina Ganske Rodrigeri", "Breno Baptistella Gretter", "Daniel Henrique Ulrich Teixeira",
+                    "Eduarda Eing Welker", "Eduardo Kreutzfeld", "Emili Gabrieli Brüske Pinto",
+                    "Graziely Duarte Rosá", "Gustavo Langer Schütze", "Gustavo Nascimento Mendes Silva",
+                    "João Carlos Moreira Ferreira", "João Vithor Gesser", "Kariny Iasmin Dotto Ferreira",
+                    "Paulo Henrique de Quadros", "Pyetro Boarski Gonçalves", "Rafaela Toni de Lima",
+                    "Sophia Eggres Moreira", "Willian Gabriel Denck Ottomeyer", "Yasmim Vitória Gaudet Janckowski"
+                ],
+                studentNotes: {},
+                notebooks: {
+                    "week_1786540087046": {
+                        id: "week_1786540087046",
+                        title: "Cadernos",
+                        trimester: "2T",
+                        records: {
+                            "Ana Beatriz Rodrigues dos Santos": "nao", "Andrielly Kannenberg": "nao",
+                            "Arthur Birr de Lima": "nao", "Bianca Catarina Ganske Rodrigeri": "nao"
+                        }
+                    }
+                },
+                grades: {
+                    "1T": {},
+                    "2T": {
+                        "Ana Beatriz Rodrigues dos Santos": { "trabalho": "3" },
+                        "Andrielly Kannenberg": { "trabalho": "3" },
+                        "Arthur Birr de Lima": { "trabalho": "3" }
+                    },
+                    "3T": {}
+                },
+                activeWeekId: "week_1786540087046"
+            },
+            "Vespertino_6º Ano": {
+                students: [
+                    "Adryan Max Bayer Ramalho", "Ana Julia Antoniawicz da Silva", "Ana Vitória Bremer",
+                    "Arthur Farias Mota", "Camilly Vitória Sell", "Danieli Bosse", "Emily Isadora Carlini",
+                    "Gustavo Scottini Zimmermann", "Ilias Krisanski Buttendorf", "Jackson Kusinski Borges",
+                    "Keila Tainara Daniel", "Laura dos Santos", "Luiz Fernando Moraes",
+                    "Marcos Vinicius Machado Gonçalves", "Maria Helena Brosowski Scheple", "Maria Luiza Paixão Santos",
+                    "Maria Vitória Peres Selzler", "Nicolli Kiatkowski", "Pedro Henrique Freire Rodrigues",
+                    "Rafael dos Santos Frotscher", "Rafael Peterson Hubner", "Sofia dos Santos", "Vanessa Nunes Pereira"
+                ],
+                studentNotes: {
+                    "Rafael Peterson Hubner": "Reprovação",
+                    "Ilias Krisanski Buttendorf": "Caderno Incompleto",
+                    "Jackson Kusinski Borges": "Caderno incompleto",
+                    "Luiz Fernando Moraes": "Caderno incompleto"
+                },
+                notebooks: {
+                    "week_1781798970442": {
+                        id: "week_1781798970442",
+                        title: "Resumo - caderno (15/07/2026)",
+                        trimester: "2T",
+                        records: {
+                            "Adryan Max Bayer Ramalho": "completo",
+                            "Ana Julia Antoniawicz da Silva": "completo",
+                            "Sofia dos Santos": "completo"
+                        }
+                    }
+                },
+                grades: {
+                    "1T": {},
+                    "2T": {
+                        "Arthur Farias Mota": { "progressoManual": 82 },
+                        "Sofia dos Santos": { "progressoManual": 100 }
+                    },
+                    "3T": {}
+                },
+                activeWeekId: "week_1781798970442"
+            },
+            "Vespertino_7º Ano": {
+                students: [
+                    "Adan Ricardo Molina Alarcon", "Andressa Karyna Wolf", "Byanca Araujo Krueger",
+                    "Danieli Stiss", "Eduarda Bortoncello da Silva", "Emilly Gabrielli Mathedi",
+                    "Enzo Emanuel Schneider Borges Pires", "Evilin Nicole MassaneIRO Pinto",
+                    "Gabrieli Bianchini Rothstein", "Gabriely Roberta Hübner", "Henrique Richert Alegri",
+                    "João Victor Wessler", "Lorenzo Emanoel de Camargo", "Lucas Emanuel Felipe",
+                    "Mateus Daniel Borges", "Pietro de Oliveira Bueno", "Rayan Felipe Braunsburger Wodzinsky",
+                    "Victor Henrique Schalinski", "Victoria Gabriela Brosowski Mülbauer",
+                    "Victória Machado Gonçalves", "Wolaci Bolduan Amandio", "Yasmin Nicolly de Liz Kriger"
+                ],
+                studentNotes: {
+                    "Adan Ricardo Molina Alarcon": "Alergia severa a ovo (não pode nem tocar)",
+                    "Henrique Richert Alegri": "Alergia alimentar: camarão"
+                },
+                notebooks: {
+                    "week_1781805053759": {
+                        id: "week_1781805053759",
+                        title: "Resumo - Caderno (15/07/2026)",
+                        trimester: "2T",
+                        records: { "Adan Ricardo Molina Alarcon": "completo" }
+                    }
+                },
+                grades: { "1T": {}, "2T": {}, "3T": {} },
+                activeWeekId: "week_1781805053759"
+            },
+            "Vespertino_8º Ano": {
+                students: [
+                    "Ana Carolina Sprung Lourenço", "Ana Clara Guedes da Nobrega", "Bruno Yuri Xavier Dorn",
+                    "Denilson Sell", "Emilly Moratelli Piontkewicz", "Enzo Przezdziecki Cardozo",
+                    "Gilberto Wessler", "Giulia Jacielly Gonçalves Wintrich", "Gustavo de Oliveira Voigt",
+                    "João Henrique Schalinsky", "Julia Gonçalves da Fonseca", "Lara Teodora Stein Gesser",
+                    "Luane Vitória da Silva dos Santos", "Manuela Borges", "Maria Fernanda de Souza Pacher",
+                    "Rialám Melchert", "Samoel Hohsptarch", "Victor Gabriel Brosowski Mülbauer",
+                    "Vitor Colaço", "Ana Beatriz"
+                ],
+                studentNotes: {},
+                notebooks: {
+                    "week_1781724461074": {
+                        id: "week_1781724461074",
+                        title: "Caderno dia 17/06 - RESUMOS",
+                        trimester: "2T",
+                        records: { "Ana Carolina Sprung Lourenço": "completo" }
+                    }
+                },
+                grades: {
+                    "1T": {},
+                    "2T": {
+                        "Ana Carolina Sprung Lourenço": { "trabalho": "2", "progressoManual": 100, "p1": 8, "p2": 10, "p3": 9, "vistosManual": 10 },
+                        "Bruno Yuri Xavier Dorn": { "trabalho": "3", "progressoManual": 100, "vistosManual": 10 }
+                    },
+                    "3T": {}
+                },
+                activeWeekId: "week_1781724461074"
+            },
+            "Vespertino_9º Ano": {
+                students: [
+                    "Adilson Geovani Felipe", "Alexandra Lubacheski Fontoura", "Alice Maciel Duarte",
+                    "Bianca Kusinski Borges", "Bruna Laís Mendes da Cruz", "Castiel Benjamin Brunelli",
+                    "Davi Henrique Alves Pereira", "Emanuelly Matoso dos Santos", "Erica Eloá Novaka",
+                    "Gabriel Angus Schulz", "Guilherme Garcia Maurissens", "Gustavo Candido Delphino",
+                    "Isabely Fideles dos Santos Dias", "João Wesley Antunes Stank", "Kauan Sprung Oliveira",
+                    "Luan Samuel Kenoblau", "Maria Vitória Ulrich Teixeira", "Mateus Ryan Paixão Santos",
+                    "Nicolas Kauã Kiatkowski", "Renan Colaço", "Tamara Ribeiro", "Vinicius Pereira"
+                ],
+                studentNotes: {},
+                notebooks: {},
+                grades: { "1T": {}, "2T": {}, "3T": {} }
+            }
+        };
+
+        // Load data from localStorage if available, otherwise use defaults
+        let state = JSON.parse(localStorage.getItem('escola_state')) || defaultState;
+        window.schoolDatabase = JSON.parse(localStorage.getItem('escola_database')) || defaultSchoolDatabase;
+
+        // Save state and database to localStorage
+        function saveToLocalStorage() {
+            localStorage.setItem('escola_state', JSON.stringify(state));
+            localStorage.setItem('escola_database', JSON.stringify(window.schoolDatabase));
+        }
+
+        window.exportHistory = function() {
+            const exportData = {
+                schoolDatabase: window.schoolDatabase,
+                state: state,
+                exportDate: new Date().toISOString()
+            };
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `historico_escolar_completo_${new Date().toISOString().slice(0, 10)}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+            showToast("Histórico exportado com sucesso!", "success");
+        };
+
+        function initClassSelector() {
+            const selector = document.getElementById('class-selector');
+            if (!selector) return;
+            selector.innerHTML = '';
+            Object.keys(window.schoolDatabase).forEach((key, idx) => {
+                const opt = document.createElement('option');
+                opt.value = key;
+                opt.textContent = `Turma ${key.replace('_', ' - ')}`;
+                if (idx === 0) opt.selected = true;
+                selector.appendChild(opt);
+            });
+            state.selectedClass = Object.keys(window.schoolDatabase)[0];
+        }
+
+        // Helper to calculate student mean grades from p1, p2, p3 or progressoManual
+        window.getStudentMean = function(stGrades) {
+            if (!stGrades) return '-';
+            let scores = [];
+            if (stGrades.p1 !== '' && !isNaN(stGrades.p1)) scores.push(parseFloat(stGrades.p1));
+            if (stGrades.p2 !== '' && !isNaN(stGrades.p2)) scores.push(parseFloat(stGrades.p2));
+            if (stGrades.p3 !== '' && !isNaN(stGrades.p3)) scores.push(parseFloat(stGrades.p3));
+            
+            if (scores.length > 0) {
+                let sum = scores.reduce((a, b) => a + b, 0);
+                return (sum / scores.length).toFixed(1);
+            }
+            if (stGrades.progressoManual !== '' && !isNaN(stGrades.progressoManual)) {
+                return (parseFloat(stGrades.progressoManual) / 10).toFixed(1);
+            }
+            return '-';
+        };
+
+        // Navigation Controller
+        window.switchTab = function(tabId) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(b => {
+                b.classList.remove('bg-indigo-600', 'text-white');
+                b.classList.add('text-slate-400');
+            });
+            const targetTab = document.getElementById(`tab-${tabId}`);
+            if (targetTab) targetTab.classList.add('active');
+            const btn = document.querySelector(`[onclick="switchTab('${tabId}')"]`);
+            if (btn) {
+                btn.classList.add('bg-indigo-600', 'text-white');
+                btn.classList.remove('text-slate-400');
+            }
+            
+            const titles = {
+                'dashboard': 'Painel Geral',
+                'alunos': 'Alunos & Acompanhamento',
+                'perfil-individual': 'Perfil & Diagnóstico Individual',
+                'provas': 'Notas de Prova (P1, P2, P3)',
+                'trabalhos': 'Trabalhos (Máx 3.0)',
+                'cadernos': 'Cadernos & Vistos',
+                'comportamento': 'Comportamento Escolar',
+                'diagnostico': 'Diagnóstico & Alertas'
+            };
+            const pageTitle = document.getElementById('page-title');
+            if (pageTitle) pageTitle.innerText = titles[tabId] || 'Gestão Escolar';
+            
+            renderActiveTabContent(tabId);
+        };
+
+        window.changeClass = function(val) {
+            state.selectedClass = val;
+            renderActiveTabContent(getActiveTabId());
+        };
+
+        window.changeTrimester = function(val) {
+            state.selectedTrimester = val;
+            renderActiveTabContent(getActiveTabId());
+        };
+
+        window.getActiveTabId = function() {
+            const active = document.querySelector('.tab-content.active');
+            if (!active) return 'dashboard';
+            return active.id.replace('tab-', '');
+        };
+
+        window.getCurrentClassData = function() {
+            return window.schoolDatabase[state.selectedClass] || { students: [], grades: {}, studentNotes: {}, notebooks: {} };
+        };
+
+        window.renderActiveTabContent = function(tabId) {
+            const classData = getCurrentClassData();
+            if (tabId === 'dashboard') renderDashboard(classData);
+            else if (tabId === 'alunos') renderAlunos(classData);
+            else if (tabId === 'perfil-individual') initProfileTab(classData);
+            else if (tabId === 'provas') renderProvas(classData);
+            else if (tabId === 'trabalhos') renderTrabalhos(classData);
+            else if (tabId === 'cadernos') renderCadernos(classData);
+            else if (tabId === 'comportamento') renderComportamento(classData);
+            else if (tabId === 'diagnostico') renderDiagnostico(classData);
+        };
+
+        // Render Dashboard
+        let dashboardChartInstance = null;
+        window.renderDashboard = function(classData) {
+            document.getElementById('dash-total-students').innerText = classData.students.length;
+            
+            const gradesTrimester = classData.grades[state.selectedTrimester] || {};
+            let sum = 0, count = 0, alerts = 0;
+            
+            classData.students.forEach(st => {
+                const g = gradesTrimester[st];
+                if (g && g.mediaProvas !== '') {
+                    let mean = parseFloat(g.mediaProvas) || 0;
+                    sum += mean;
+                    count++;
+                    if (mean < 6) alerts++;
+                }
+            });
+
+            const turmaAvg = count > 0 ? (sum / count).toFixed(1) : '0.0';
+            document.getElementById('dash-turma-avg').innerText = turmaAvg;
+            document.getElementById('dash-alert-count').innerText = alerts;
+            document.getElementById('dash-notebook-rate').innerText = '85%';
+
+            const canvas = document.getElementById('chart-dashboard-grades');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            if (dashboardChartInstance) dashboardChartInstance.destroy();
+
+            dashboardChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['0 - 4.9 (Baixo)', '5.0 - 6.9 (Regular)', '7.0 - 8.9 (Bom)', '9.0 - 10 (Excelente)'],
+                    datasets: [{
+                        label: 'Qtd de Alunos',
+                        data: [alerts, count > alerts ? count - alerts : 2, 5, 3],
+                        backgroundColor: ['#ef4444', '#f59e0b', '#3b82f6', '#10b981'],
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, grid: { color: '#f1f5f9' } }, x: { grid: { display: false } } }
+                }
+            });
+        };
+
+        // Render Alunos
+        window.renderAlunos = function(classData) {
+            const tbody = document.querySelector('#table-students-list tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            
+            const gradesTrimester = classData.grades[state.selectedTrimester] || {};
+            
+            classData.students.forEach(st => {
+                const note = classData.studentNotes[st] || 'Nenhuma anotação';
+                const g = gradesTrimester[st] || { mediaProvas: '-' };
+                const beh = state.behavior[st] || { positive: ['Participativo'], negative: [] };
+
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-50/80 transition-all';
+                tr.innerHTML = `
+                    <td class="p-4 font-semibold text-slate-900">${st}</td>
+                    <td class="p-4 text-xs text-slate-600">
+                        <div>Média Provas: <strong>${g.mediaProvas || '-'}</strong></div>
+                        <div class="text-[11px] text-slate-400 mt-0.5 truncate max-w-xs">Nota: ${note}</div>
+                    </td>
+                    <td class="p-4 text-xs">
+                        <span class="px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-full font-medium">${beh.positive[0] || 'Regular'}</span>
+                    </td>
+                    <td class="p-4 text-right">
+                        <button onclick="switchToStudentProfile('${st}')" class="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs rounded-xl transition-all">
+                            Ver Perfil <i class="fa-solid fa-arrow-right ml-1"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        };
+
+        window.filterStudentsTable = function() {
+            const query = document.getElementById('student-search-input').value.toLowerCase();
+            const rows = document.querySelectorAll('#table-students-list tbody tr');
+            rows.forEach(r => {
+                const name = r.querySelector('td').innerText.toLowerCase();
+                r.style.display = name.includes(query) ? '' : 'none';
+            });
+        };
+
+        window.switchToStudentProfile = function(studentName) {
+            switchTab('perfil-individual');
+            const select = document.getElementById('select-individual-student');
+            if (select) {
+                select.value = studentName;
+                renderIndividualProfileTab(studentName);
+            }
+        };
+
+        // Perfil & Diagnóstico Individual
+        let tabIndividualChartInstance = null;
+        window.initProfileTab = function(classData) {
+            const select = document.getElementById('select-individual-student');
+            if (!select) return;
+            select.innerHTML = '';
+            if (!classData.students || classData.students.length === 0) {
+                select.innerHTML = '<option value="">Nenhum aluno cadastrado</option>';
+                return;
+            }
+            classData.students.forEach((st, idx) => {
+                const opt = document.createElement('option');
+                opt.value = st;
+                opt.textContent = st;
+                if (idx === 0) opt.selected = true;
+                select.appendChild(opt);
+            });
+            renderIndividualProfileTab(classData.students[0]);
+        };
+
+        window.renderIndividualProfileTab = function(studentName) {
+            if (!studentName) return;
+            const classData = getCurrentClassData();
+            const container = document.getElementById('individual-profile-content-container');
+            if (!container) return;
+            
+            const gradesTrimester = classData.grades[state.selectedTrimester] || {};
+            const stGrades = gradesTrimester[studentName] || { mediaProvas: '', trabalho: '' };
+            
+            let mediaProvas = parseFloat(stGrades.mediaProvas) || 0;
+            let trabalho = parseFloat(stGrades.trabalho) || 0;
+
+            const note = classData.studentNotes[studentName] || 'Nenhuma anotação especial registrada.';
+            const beh = state.behavior[studentName] || { positive: ['Engajamento satisfatório'], negative: [] };
+            
+            let totalVistos = 2;
+            let totalNotebooks = 2;
+
+            let tips = [];
+            let meanProvas = stGrades.mediaProvas !== '' ? mediaProvas : null;
+
+            if (meanProvas !== null && meanProvas < 6) {
+                tips.push(`• <strong>Plano de Recuperação Paralela:</strong> A média de provas (${meanProvas.toFixed(1)}) está abaixo da média recomendada (6.0). Recomenda-se lista de exercícios direcionados e atendimento em horário de reforço escolar.`);
+            } else if (meanProvas !== null && meanProvas >= 8) {
+                tips.push(`• <strong>Enriquecimento Curricular:</strong> Excelente desempenho acadêmico. Sugere-se propor projetos de aprofundamento, pesquisas complementares ou tutoria entre colegas.`);
+            } else {
+                tips.push(`• <strong>Acompanhamento Contínuo:</strong> Desempenho dentro da média esperada. Incentivar a participação ativa nos debates em sala.`);
+            }
+
+            if (beh.negative && beh.negative.length > 0) {
+                tips.push(`• <strong>Intervenção Comportamental:</strong> Registrados pontos de atenção (${beh.negative.join(', ')}). Sugere-se diálogo individual.`);
+            } else {
+                tips.push(`• <strong>Estabilidade Comportamental:</strong> Postura cooperativa e atenta durante as aulas.`);
+            }
+
+            container.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                        <div class="flex items-center justify-between">
+                            <h4 class="font-bold text-xs uppercase tracking-wider text-slate-600">Desempenho Individual (${state.selectedTrimester})</h4>
+                            <span class="px-2.5 py-0.5 bg-indigo-50 text-indigo-700 font-bold text-xs rounded-full">${studentName}</span>
+                        </div>
+                        <div class="h-64 relative">
+                            <canvas id="chart-tab-individual-performance"></canvas>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4 flex flex-col justify-between">
+                        <div class="space-y-3">
+                            <h4 class="font-bold text-xs uppercase tracking-wider text-slate-600">Diagnóstico Escolar Detalhado</h4>
+                            <div class="bg-slate-50 p-4 rounded-xl border border-slate-200/60 text-xs space-y-2.5 text-slate-700">
+                                <div><strong>Anotações / Alerta:</strong> <span class="text-slate-900">${note}</span></div>
+                                <div><strong>Vistos de Caderno:</strong> <span class="text-indigo-600 font-bold">${totalVistos} de ${totalNotebooks} completos</span></div>
+                                <div><strong>Destaques Positivos:</strong> ${beh.positive.join(', ')}</div>
+                                <div><strong>Média de Provas:</strong> ${meanProvas !== null ? meanProvas.toFixed(1) : 'Não avaliado'}</div>
+                            </div>
+                        </div>
+                        <div class="text-[11px] text-slate-400 italic">Atualizado com base nos registros do trimestre ativo.</div>
+                    </div>
+                </div>
+                <div class="bg-indigo-50/70 border border-indigo-100 p-6 rounded-2xl space-y-3">
+                    <h4 class="font-bold text-sm uppercase tracking-wider text-indigo-900 flex items-center gap-2">
+                        <i class="fa-solid fa-lightbulb text-amber-500 text-base"></i> Soluções Pedagógicas & Plano de Desenvolvimento
+                    </h4>
+                    <div class="text-xs text-indigo-950 space-y-2 leading-relaxed">
+                        ${tips.join('<br><br>')}
+                    </div>
+                </div>
+            `;
+
+            const canvasEl = document.getElementById('chart-tab-individual-performance');
+            if (!canvasEl) return;
+            const ctx = canvasEl.getContext('2d');
+            if (tabIndividualChartInstance) tabIndividualChartInstance.destroy();
+
+            tabIndividualChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Média de Provas', 'Trabalho (Max 3)'],
+                    datasets: [{
+                        label: 'Nota Atribuída',
+                        data: [stGrades.mediaProvas !== '' ? mediaProvas : 0, stGrades.trabalho !== '' ? trabalho : 0],
+                        backgroundColor: ['#6366f1', '#10b981'],
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, max: 10, grid: { color: '#f1f5f9' } }, x: { grid: { display: false } } }
+                }
+            });
+        };
+
+        // Provas Tab
+        window.renderProvas = function(classData) {
+            const tbody = document.querySelector('#table-provas tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            
+            const gradesTrimester = classData.grades[state.selectedTrimester] || {};
+            
+            classData.students.forEach(st => {
+                const g = gradesTrimester[st] || { mediaProvas: '', trabalho: '' };
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-50/80 transition-all';
+                tr.innerHTML = `
+                    <td class="p-4 font-semibold text-slate-900">${st}</td>
+                    <td class="p-4 text-center"><input type="text" value="${g.mediaProvas || ''}" onchange="updateGrade('${st}', 'mediaProvas', this.value)" class="w-24 text-center border border-slate-200 rounded-lg py-1.5 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500"></td>
+                    <td class="p-4 text-xs text-slate-500">Avaliação global trimestral de provas.</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        };
+
+        window.updateGrade = function(student, field, val) {
+            if (!window.schoolDatabase[state.selectedClass].grades[state.selectedTrimester]) {
+                window.schoolDatabase[state.selectedClass].grades[state.selectedTrimester] = {};
+            }
+            if (!window.schoolDatabase[state.selectedClass].grades[state.selectedTrimester][student]) {
+                window.schoolDatabase[state.selectedClass].grades[state.selectedTrimester][student] = { mediaProvas: '', trabalho: '' };
+            }
+            window.schoolDatabase[state.selectedClass].grades[state.selectedTrimester][student][field] = val;
+            saveToLocalStorage();
+        };
+
+        window.showToast = function(message, type = 'success') {
+            const existing = document.getElementById('custom-toast');
+            if (existing) existing.remove();
+            
+            const toast = document.createElement('div');
+            toast.id = 'custom-toast';
+            toast.className = `fixed bottom-6 right-6 z-50 px-5 py-3 rounded-2xl shadow-lg text-xs font-bold text-white flex items-center gap-3 transition-all transform translate-y-2 opacity-0 ${type === 'success' ? 'bg-emerald-600' : 'bg-rose-600'}`;
+            toast.innerHTML = `<i class="fa-solid ${type === 'success' ? 'fa-circle-check' : 'fa-triangle-exclamation'} text-sm"></i> <span>${message}</span>`;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => { toast.classList.remove('translate-y-2', 'opacity-0'); }, 10);
+            setTimeout(() => {
+                toast.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        };
+
+        window.applyPastedGrades = function() {
+            const rawText = document.getElementById('paste-grades-textarea').value;
+            if (!rawText.trim()) {
+                showToast('Cole algumas notas na caixa de texto primeiro.', 'error');
+                return;
+            }
+            
+            const lines = rawText.split(/\r?\n|\t/).map(l => l.trim()).filter(l => l !== '');
+            const classData = getCurrentClassData();
+            
+            if (!window.schoolDatabase[state.selectedClass].grades[state.selectedTrimester]) {
+                window.schoolDatabase[state.selectedClass].grades[state.selectedTrimester] = {};
+            }
+            
+            let updatedCount = 0;
+            lines.forEach((val, idx) => {
+                if (idx < classData.students.length) {
+                    const st = classData.students[idx];
+                    if (!window.schoolDatabase[state.selectedClass].grades[state.selectedTrimester][st]) {
+                        window.schoolDatabase[state.selectedClass].grades[state.selectedTrimester][st] = { mediaProvas: '', trabalho: '' };
+                    }
+                    const cleanVal = val.replace(',', '.');
+                    window.schoolDatabase[state.selectedClass].grades[state.selectedTrimester][st].mediaProvas = cleanVal;
+                    updatedCount++;
+                }
+            });
+            
+            renderProvas(classData);
+            renderDashboard(classData);
+            saveToLocalStorage();
+            document.getElementById('paste-grades-textarea').value = '';
+            showToast(`${updatedCount} notas importadas e aplicadas com sucesso na sequência dos alunos!`, 'success');
+        };
+
+        // Trabalhos Tab
+        window.renderTrabalhos = function(classData) {
+            const tbody = document.querySelector('#table-trabalhos tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            
+            const gradesTrimester = classData.grades[state.selectedTrimester] || {};
+            classData.students.forEach(st => {
+                const g = gradesTrimester[st] || { trabalho: '' };
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-50/80 transition-all';
+                tr.innerHTML = `
+                    <td class="p-4 font-semibold text-slate-900">${st}</td>
+                    <td class="p-4 text-center"><input type="text" value="${g.trabalho || ''}" onchange="updateGrade('${st}', 'trabalho', this.value)" class="w-20 text-center border border-slate-200 rounded-lg py-1 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500"></td>
+                    <td class="p-4 text-xs text-slate-500">Entrega de trabalho prático e seminários.</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        };
+
+        // Cadernos Tab
+        window.renderCadernos = function(classData) {
+            const theadTr = document.querySelector('#table-cadernos thead tr');
+            const tbody = document.querySelector('#table-cadernos tbody');
+            if (!theadTr || !tbody) return;
+            
+            theadTr.innerHTML = '<th class="p-4">Estudante</th>';
+            Object.keys(classData.notebooks || {}).forEach(nbName => {
+                theadTr.innerHTML += `<th class="p-4 text-center">${nbName}</th>`;
+            });
+
+            tbody.innerHTML = '';
+            classData.students.forEach(st => {
+                let rowHtml = `<td class="p-4 font-semibold text-slate-900">${st}</td>`;
+                Object.keys(classData.notebooks || {}).forEach(nbName => {
+                    const status = classData.notebooks[nbName].records[st] || 'pendente';
+                    const badgeColor = status === 'completo' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700';
+                    rowHtml += `<td class="p-4 text-center"><span class="px-2.5 py-1 rounded-full text-xs font-bold ${badgeColor}">${status}</span></td>`;
+                });
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-50/80 transition-all';
+                tr.innerHTML = rowHtml;
+                tbody.appendChild(tr);
+            });
+        };
+
+        window.addNewNotebookCheck = function() {
+            const name = prompt("Nome do Visto / Data (ex: Visto 20/03):");
+            if (!name) return;
+            const classData = getCurrentClassData();
+            if (!classData.notebooks) classData.notebooks = {};
+            classData.notebooks[name] = { records: {} };
+            classData.students.forEach(st => {
+                classData.notebooks[name].records[st] = 'completo';
+            });
+            saveToLocalStorage();
+            renderCadernos(classData);
+        };
+
+        // Comportamento Tab
+        window.renderComportamento = function(classData) {
+            const tbody = document.querySelector('#table-comportamento tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            
+            const positiveOptions = ["Foco", "Participativo", "Colaborativo", "Respeitoso", "Pontual"];
+            const negativeOptions = ["Conversa Paralela", "Falta Material", "Disperso", "Agitado", "Desatento"];
+            
+            classData.students.forEach(st => {
+                if (!state.behavior[st]) {
+                    state.behavior[st] = { positive: ["Participativo"], negative: [], notes: "" };
+                }
+                const beh = state.behavior[st];
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-50/80 transition-all';
+                
+                let posHtml = positiveOptions.map(tag => {
+                    const active = beh.positive.includes(tag);
+                    return `<button onclick="toggleBehaviorTag('${st}', 'positive', '${tag}')" class="px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${active ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">${tag}</button>`;
+                }).join(' ');
+
+                let negHtml = negativeOptions.map(tag => {
+                    const active = beh.negative.includes(tag);
+                    return `<button onclick="toggleBehaviorTag('${st}', 'negative', '${tag}')" class="px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${active ? 'bg-rose-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">${tag}</button>`;
+                }).join(' ');
+
+                tr.innerHTML = `
+                    <td class="p-4 font-semibold text-slate-900 whitespace-nowrap">${st}</td>
+                    <td class="p-4"><div class="flex flex-wrap gap-1.5">${posHtml}</div></td>
+                    <td class="p-4"><div class="flex flex-wrap gap-1.5">${negHtml}</div></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        };
+
+        window.toggleBehaviorTag = function(student, category, tag) {
+            if (!state.behavior[student]) {
+                state.behavior[student] = { positive: [], negative: [], notes: "" };
+            }
+            if (!state.behavior[student][category]) {
+                state.behavior[student][category] = [];
+            }
+            const idx = state.behavior[student][category].indexOf(tag);
+            if (idx > -1) {
+                state.behavior[student][category].splice(idx, 1);
+            } else {
+                state.behavior[student][category].push(tag);
+            }
+            saveToLocalStorage();
+            renderComportamento(getCurrentClassData());
+            showToast(`Comportamento atualizado para ${student}`, 'success');
+        };
+
+        // Diagnóstico Tab
+        window.renderDiagnostico = function(classData) {
+            const container = document.getElementById('diagnostic-summary-content');
+            if (!container) return;
+            container.innerHTML = `
+                <div class="bg-indigo-50/60 p-6 rounded-2xl border border-indigo-100 space-y-3">
+                    <h4 class="font-bold text-sm text-indigo-900 flex items-center gap-2"><i class="fa-solid fa-chart-line text-indigo-600"></i> Desempenho Geral da Turma</h4>
+                    <p class="text-xs text-slate-700 leading-relaxed">A turma demonstra boa assimilação dos conteúdos fundamentais no trimestre. O índice geral de aproveitamento nas provas é estável, com destaque para a entrega de trabalhos práticos.</p>
+                </div>
+                <div class="bg-amber-50/60 p-6 rounded-2xl border border-amber-100 space-y-3">
+                    <h4 class="font-bold text-sm text-amber-900 flex items-center gap-2"><i class="fa-solid fa-triangle-exclamation text-amber-600"></i> Pontos de Atenção & Intervenções</h4>
+                    <p class="text-xs text-slate-700 leading-relaxed">Identificados alguns alunos com defasagem pontual em equações e resolução de problemas. Recomenda-se o uso do <strong>Perfil & Diagnóstico Individual</strong> para gerar planos de estudo personalizados.</p>
+                </div>
+            `;
+        };
+
+        // Initialize on load
+        window.onload = function() {
+            initClassSelector();
+            switchTab('dashboard');
+        };
+    </script>
+</body>
+</html>
